@@ -5,8 +5,6 @@
 //  Created by Jaewon Yun on 3/4/24.
 //
 
-@testable import CLT
-
 import Foundation
 import XCTest
 

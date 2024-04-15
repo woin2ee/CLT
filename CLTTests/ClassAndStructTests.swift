@@ -29,27 +29,27 @@ final class ClassAndStructAllocationTests: XCTestCase {
         }
     }
     
+    func test_measureAllocationPerformanceForNormalClass() {
+        let sampleData = "SampleDataString".data(using: .utf8)!
+        
+        measure {
+            (1...REPEAT_COUNT).forEach { i in
+                let ref = NormalClass(id: UUID(), data: sampleData, name: "\(i)", alias: "\(i)", userInfo: [:])
+            }
+        }
+    }
+    
+    func test_measureAllocationPerformanceForNormalStruct() {
+        let sampleData = "SampleDataString".data(using: .utf8)!
+        
+        measure {
+            (1...REPEAT_COUNT).forEach { i in
+                let ref = NormalStruct(id: UUID(), data: sampleData, name: "\(i)", alias: "\(i)", userInfo: [:])
+            }
+        }
+    }
+    
     func test_measureAllocationPerformanceForHeavyClass() {
-        let sampleData = "SampleDataString".data(using: .utf8)!
-        
-        measure {
-            (1...REPEAT_COUNT).forEach { i in
-                let ref = HeavyClass(id: UUID(), data: sampleData, name: "\(i)", alias: "\(i)", userInfo: [:])
-            }
-        }
-    }
-    
-    func test_measureAllocationPerformanceForHeavyStruct() {
-        let sampleData = "SampleDataString".data(using: .utf8)!
-        
-        measure {
-            (1...REPEAT_COUNT).forEach { i in
-                let ref = HeavyStruct(id: UUID(), data: sampleData, name: "\(i)", alias: "\(i)", userInfo: [:])
-            }
-        }
-    }
-    
-    func test_measureAllocationPerformanceForLargeClass() {
         let largeData = Data(count: 1024 * 1024 * 1024 * 1024)
         
         measure {
@@ -59,7 +59,7 @@ final class ClassAndStructAllocationTests: XCTestCase {
         }
     }
     
-    func test_measureAllocationPerformanceForLargeStruct() {
+    func test_measureAllocationPerformanceForHeavyStruct() {
         let largeData = Data(count: 1024 * 1024 * 1024 * 1024)
         
         measure {
@@ -195,12 +195,18 @@ final class ClassAndStructMethodDispatchTests: XCTestCase {
     }
 }
 
-final class ClassAndStructReferenceCountingTests: XCTestCase {
+final class ClassAndStructReferenceCountingOrCopyTests: XCTestCase {
     
     let REPEAT_COUNT = BASE_REPEAT_COUNT
     
-    func test_measureReferenceCountingPerformanceForSimpleClass() {
+    // - Simple ------------------------------------------------------------------------
+    
+    // Average: 0.284 sec
+    func test_measureReferenceCountingOrCopyPerformanceForSimpleClass() {
         let simpleClass = SimpleClass(id: 0)
+        
+        let size = MemoryLayout.size(ofValue: simpleClass)
+        print(size) // 8
         
         measure {
             (1...REPEAT_COUNT).forEach { _ in
@@ -209,8 +215,12 @@ final class ClassAndStructReferenceCountingTests: XCTestCase {
         }
     }
     
-    func test_measureReferenceCountingPerformanceForSimpleStruct() {
+    // Average: 0.275 sec
+    func test_measureReferenceCountingOrCopyPerformanceForSimpleStruct() {
         let simpleStruct = SimpleStruct(id: 0)
+        
+        let size = MemoryLayout.size(ofValue: simpleStruct)
+        print(size) // 8
         
         measure {
             (1...REPEAT_COUNT).forEach { _ in
@@ -219,27 +229,40 @@ final class ClassAndStructReferenceCountingTests: XCTestCase {
         }
     }
     
-    func test_measureReferenceCountingPerformanceForHeavyClass() {
-        let heavyClass = HeavyClass(id: UUID(), data: Data(), name: "name", alias: "alias", userInfo: [:])
+    // - Normal ------------------------------------------------------------------------
+    
+    // Average: 0.280 sec
+    func test_measureReferenceCountingOrCopyPerformanceForNormalClass() {
+        let normalClass = NormalClass(id: UUID(), data: Data(), name: "name", alias: "alias", userInfo: [:])
+        
+        let size = MemoryLayout.size(ofValue: normalClass)
+        print(size) // 8
         
         measure {
             (1...REPEAT_COUNT).forEach { _ in
-                let ref = heavyClass
+                let ref = normalClass
             }
         }
     }
     
-    func test_measureReferenceCountingPerformanceForHeavyStruct() {
-        let heavyStruct = HeavyStruct(id: UUID(), data: Data(), name: "name", alias: "alias", userInfo: [:])
+    // Average: 0.315 sec
+    func test_measureReferenceCountingOrCopyPerformanceForNormalStruct() {
+        let normalStruct = NormalStruct(id: UUID(), data: Data(), name: "name", alias: "alias", userInfo: [:])
+        
+        let size = MemoryLayout.size(ofValue: normalStruct)
+        print(size) // 88
         
         measure {
             (1...REPEAT_COUNT).forEach { _ in
-                let ref = heavyStruct
+                let ref = normalStruct
             }
         }
     }
     
-    func test_measureReferenceCountingPerformanceForHeaviestClass() {
+    // - Heaviest ----------------------------------------------------------------------
+    
+    // Average: 0.281 sec
+    func test_measureReferenceCountingOrCopyPerformanceForHeaviestClass() {
         let p1: Point = Point(x: 0, y: 0)
         let p2: Point = Point(x: 0, y: 0)
         let p3: Point = Point(x: 0, y: 0)
@@ -273,7 +296,8 @@ final class ClassAndStructReferenceCountingTests: XCTestCase {
         }
     }
     
-    func test_measureReferenceCountingPerformanceForHeaviestStruct() {
+    // Average: 0.365 sec
+    func test_measureReferenceCountingOrCopyPerformanceForHeaviestStruct() {
         let p1: Point = Point(x: 0, y: 0)
         let p2: Point = Point(x: 0, y: 0)
         let p3: Point = Point(x: 0, y: 0)
@@ -307,7 +331,8 @@ final class ClassAndStructReferenceCountingTests: XCTestCase {
         }
     }
     
-    func test_measureReferenceCountingPerformanceForNonReferenceHeaviestStruct() {
+    // Average: 0.274 sec
+    func test_measureReferenceCountingOrCopyPerformanceForNonReferenceHeaviestStruct() {
         let nonReferenceStruct = NonReferenceHeaviestStruct(p1: 0, p2: 0, p3: 0, p4: 0, p5: 0, p6: 0, p7: 0, p8: 0, p9: 0, p10: 0, p11: 0, p12: 0, p13: 0, p14: 0, p15: 0, p16: 0, p17: 0, p18: 0, p19: 0, p20: 0)
         
         let size = MemoryLayout.size(ofValue: nonReferenceStruct)
@@ -396,6 +421,8 @@ class HeavyClass {
     }
 }
 
+typealias NormalClass = HeavyClass
+
 class HeaviestClass {
     var p1: Point
     var p2: Point
@@ -460,6 +487,8 @@ struct HeavyStruct {
     var thumbnailData: Data?
     var userInfo: [String: Any]
 }
+
+typealias NormalStruct = HeavyStruct
 
 struct HeaviestStruct {
     var p1: Point
